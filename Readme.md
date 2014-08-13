@@ -11,7 +11,7 @@ For general information about installing SimpleITK please see the [SimpleITK wik
 
 ## Setting Up a Python Environment
 
-It is recommended to setup a separate Python virtual environment to run through these notebooks.
+It is recommended to setup a separate Python virtual environment to run through these notebooks as a tutorial.
 
 Under the best of circumstances (tested on OSX 10.9, 10.8, 10.7, RH6, Ubuntu 12) this environment can be setup with the following:
 
@@ -22,23 +22,25 @@ Under the best of circumstances (tested on OSX 10.9, 10.8, 10.7, RH6, Ubuntu 12)
     ~/sitkpy/bin/pip install matplotlib
 
 Note: On Linux platforms you may be able to obtain many of these packages as system packages which may suffice ( Ubuntu 12+).
-Note: On Window platforms some of these packages need be obtained as binary downloads and installed.
+Note: On Window platforms some of these packages should be obtained as binary downloads and installed.
 
 ### Install SimpleITK
 
 For many common platforms, a built distribution is available as an Python egg. This can be downloading and installed with the following command:
 
+    source ~/sitkpy/bin/activate
     ~/sitkpy/bin/easy_install SimpleITK
- 
 
-As of this writing, SimpleITK version >=0.6r1 is required to run these notebooks. This version currently needs to be downloaded from [Source Forge](http://sourceforge.net/projects/simpleitk/files/SimpleITK/0.6.rc1/Python/)
+Alternatively, you can manually download SimpleITK binaries and manually install them from
+[Source Forge](http://sourceforge.net/projects/simpleitk/files/SimpleITK/0.8.0/Python/)
 
 ### Run the environment
- 
+
 To launch:
 
+    source ~/sitkpy/bin/activate
     cd SimpleITK-Notebook-Answers
-    ~/sitkpy/bin/ipython notebook --pylab=inline
+    ~/sitkpy/bin/ipython notebook
 
 # Maintainence
 
