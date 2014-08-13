@@ -113,6 +113,5 @@ def myshowDisplacementField(displacement, img , **kwargs):
 
     #flip y, because
 
-    fig = plt.gcf()
-    fig.
+    fig = plt.gca()
     ax.quiver(x,y,U,V,color='r',units="xy")
