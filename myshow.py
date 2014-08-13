@@ -84,3 +84,35 @@ def myshow3d(img, xslices=[], yslices=[], zslices=[], title=None, margin=0.05, d
 
 
     myshow(img, title, margin, dpi)
+
+def myshowDisplacementField(displacement, img , **kwargs):
+    """ This is a work in progress to display a displacement field on
+    top of an image via a quiver plot. Currently this only works for
+    2D images, and access to the current matplotlib axes is
+    required."""
+
+    nda = sitk.GetArrayFromImage(displacement)
+    spacing = displacement.GetSpacing()
+
+    if( nda.ndim-1 != nda.shape[-1]):
+        raise Exception("vectors don't match dimension!")
+
+    myshow(img, **kwargs)
+    stride = 10
+    dorigin=displacement.GetOrigin()
+    dspacing=displacement.GetSpacing()
+    dsize=displacement.GetSize()
+    x = np.arange(dorigin[0],
+                    dorigin[0]+dspacing[0]*dsize[0],
+                    dspacing[0])[::stride]
+    y = np.arange(dorigin[1],
+                    dorigin[1]+dspacing[1]*dsize[1],
+                    dspacing[1])[::stride]
+    U = nda[::stride,::-stride,0]
+    V =-nda[::stride,::-stride,1]
+
+    #flip y, because
+
+    fig = plt.gcf()
+    fig.
+    ax.quiver(x,y,U,V,color='r',units="xy")
