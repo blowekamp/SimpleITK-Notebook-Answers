@@ -1,13 +1,32 @@
 {
  "metadata": {
-  "name": "",
-  "signature": "sha256:3044dfe19e3c25fd1753c8595885b420ee079f7ffdf2ccf97afff9091855198c"
+  "name": ""
  },
  "nbformat": 3,
  "nbformat_minor": 0,
  "worksheets": [
   {
    "cells": [
+    {
+     "cell_type": "markdown",
+     "metadata": {},
+     "source": [
+      "This test runs a two-stages registration process including following stages:\n",
+      "\n",
+      "1) Rigid\n",
+      "\n",
+      "2) Affine\n",
+      "\n",
+      "The main difference between this test and the test 1 is the way that registration process is initialized\n",
+      "and the different stages are connected to eachother.\n",
+      "Here we use SetMovingInitialTransform() method to initialize the second stage using the output of the\n",
+      "firts stage.\n",
+      "Also, we use Inplace=False, so at each stage the output transform object is different than the input transform object.\n",
+      "We use a composite transform as container to concatenate the initial transform and the outputs of different stages together.\n",
+      "\n",
+      "Also, here we use fixed and moving images masks to do the registration only on regions of interest."
+     ]
+    },
     {
      "cell_type": "code",
      "collapsed": false,
@@ -25,18 +44,30 @@
      "cell_type": "code",
      "collapsed": false,
      "input": [
-      "\n",
+      "######## WARNING:\n",
+      "# You will need to replace the following path with your local BRAINSFit path.\n",
+      "BRIANSToolsPath=\"/Users/aghayoor/WorkSpace/BS/release/bin\"\n",
+      "BRAINSFitPath=os.path.join(BRIANSToolsPath,\"BRAINSFit\")\n",
+      "if not os.path.isfile(BRAINSFitPath):\n",
+      "    print(\"ERROR: This script requires that BRAINSFit can be found\")\n",
+      "    print(\"{0} does not exists\".format(BRAINSFitPath))"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
       "fixedImageFilename = fdata('BRAINSTools/test.nii.gz')\n",
       "movingImageFilename = fdata('BRAINSTools/rotation.test.nii.gz')\n",
       "fixed = sitk.ReadImage(fixedImageFilename,sitk.sitkFloat32)\n",
       "moving = sitk.ReadImage(movingImageFilename, sitk.sitkFloat32)\n",
       "\n",
-      "referenceBaselineImageFilename = fdata('BRAINSTools/BRAINSFitTest_AffineRotationMasks.result.nii.gz')\n",
-      "baseline = sitk.ReadImage(referenceBaselineImageFilename, sitk.sitkFloat32)\n",
-      "myshow3d(fixed, xslices=[], yslices=[], zslices=[], title=\"fixed\")\n",
-      "myshow3d(moving, xslices=[], yslices=[], zslices=[], title=\"moving\")\n",
-      "myshow3d(baseline, xslices=[], yslices=[], zslices=[], title=\"baseline\")\n",
-      "\n",
+      "#referenceBaselineImageFilename = fdata('BRAINSTools/BRAINSFitTest_AffineRotationMasks.result.nii.gz')\n",
+      "#baseline = sitk.ReadImage(referenceBaselineImageFilename, sitk.sitkFloat32)\n",
       "\n",
       "fixedMaskFilename = fdata(\"BRAINSTools/test_mask.nii.gz\")\n",
       "movingMaskFilename = fdata(\"BRAINSTools/rotation.test_mask.nii.gz\")\n",
@@ -45,7 +76,7 @@
       "\n",
       "myshow3d(fixed, xslices=[], yslices=[], zslices=[], title=\"fixed\")\n",
       "myshow3d(moving, xslices=[], yslices=[], zslices=[], title=\"moving\")\n",
-      "myshow3d(baseline, xslices=[], yslices=[], zslices=[], title=\"baseline\")\n",
+      "#myshow3d(baseline, xslices=[], yslices=[], zslices=[], title=\"baseline\")\n",
       "myshow3d(fixedMask, xslices=[], yslices=[], zslices=[], title=\"fixed mask\")\n",
       "myshow3d(movingMask, xslices=[], yslices=[], zslices=[], title=\"moving mask\")"
      ],
@@ -87,7 +118,34 @@
      "cell_type": "code",
      "collapsed": false,
      "input": [
-      "print(ctx)"
+      "BFitOut=os.path.realpath('BFitOut.nii.gz')\n",
+      "# RUN THE BRAINSFIT FIRST ######################\n",
+      "!{BRIANSToolsPath}/BRAINSFit \\\n",
+      "--costMetric MMI \\\n",
+      "--numberOfIterations 250,250 \\\n",
+      "--numberOfHistogramBins 200 \\\n",
+      "--samplingPercentage 0.5 \\\n",
+      "--translationScale 250 \\\n",
+      "--maximumStepLength 0.5 \\\n",
+      "--minimumStepLength 0.01,0.001 \\\n",
+      "--outputVolumePixelType float \\\n",
+      "--initialTransform {initialMovingTxFilename} \\\n",
+      "--transformType Rigid,Affine \\\n",
+      "--fixedVolume {fixedImageFilename} \\\n",
+      "--movingVolume {movingImageFilename} \\\n",
+      "--outputVolume {BFitOut}"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "outputBFit = sitk.ReadImage(BFitOut,sitk.sitkFloat32)\n",
+      "myshow3d(outputBFit, xslices=[], yslices=[], zslices=[], title=\"OutputVolume of BRANSFit\")"
      ],
      "language": "python",
      "metadata": {},
@@ -111,8 +169,8 @@
       "R.SetMetricFixedMask(fixedMask)\n",
       "R.SetMetricMovingMask(movingMask)\n",
       "R.SetMetricAsMattesMutualInformation( 200 )\n",
-      "R.SetOptimizerAsRegularStepGradientDescent(learningRate =0.2,\n",
-      "                                           minStep=1e-3,\n",
+      "R.SetOptimizerAsRegularStepGradientDescent(learningRate =0.5,\n",
+      "                                           minStep=1e-2,\n",
       "                                           numberOfIterations=250,\n",
       "                                           gradientMagnitudeTolerance=1e-4,\n",
       "                                           estimateLearningRate=R.Never)\n",
@@ -132,59 +190,6 @@
      "cell_type": "code",
      "collapsed": false,
      "input": [
-      "def command_iteration(method) :\n",
-      "    print(\"{0} = {1} : {2}\".format(method.GetOptimizerIteration(),\n",
-      "                                   method.GetMetricValue(),\n",
-      "                                   method.GetOptimizerPosition()), end='\\n')\n",
-      "    sys.stdout.flush()\n",
-      "\n",
-      "def command_save_start(method):\n",
-      "        global cmd_values, cmd_positions\n",
-      "        cmd_values = np.array([])\n",
-      "        cmd_positions = np.ndarray(shape=(0,len(method.GetInitialTransform().GetParameters())))\n",
-      "    \n",
-      "def command_save_iteration(method):\n",
-      "    global cmd_values, cmd_positions\n",
-      "    cmd_values = np.concatenate((cmd_values,[method.GetMetricValue()]))\n",
-      "    cmd_positions = np.concatenate((cmd_positions,[method.GetOptimizerPosition()]),axis=0)\n",
-      "    \n",
-      "\n",
-      "def plot2DTranslation(values, positions, figtitle=\"\"):\n",
-      "    from matplotlib.font_manager import FontProperties\n",
-      "    \n",
-      "    fig, (ax0, ax1) = plt.subplots(nrows=2)\n",
-      "    \n",
-      "    \n",
-      "    if figtitle != \"\":\n",
-      "        fig.text(0.5, 0.95, figtitle,\n",
-      "               horizontalalignment='center',\n",
-      "               fontproperties=FontProperties(size=16))\n",
-      "    ax0.plot(range(len(values)),values)\n",
-      "    ax0.set_title('Metric Value')\n",
-      "    ax0.set_xlabel('value')\n",
-      "    ax0.set_ylabel('iteration #')\n",
-      "\n",
-      "    ax1.plot(positions[:,-1],positions[:,-2])\n",
-      "    ax1.set_title('Position')\n",
-      "    ax1.set_xlabel('x translation')\n",
-      "    ax1.set_ylabel('y translation')\n",
-      "\n",
-      "    plt.tight_layout()\n",
-      "    plt.show()\n",
-      "    "
-     ],
-     "language": "python",
-     "metadata": {},
-     "outputs": [],
-     "prompt_number": null
-    },
-    {
-     "cell_type": "code",
-     "collapsed": false,
-     "input": [
-      "\n",
-      "\n",
-      "\n",
       "R.RemoveAllCommands()\n",
       "R.AddCommand( sitk.sitkIterationEvent, lambda: command_iteration(R) )\n",
       "outTx = R.Execute(sitk.Cast(fixed,sitk.sitkFloat32), sitk.Cast(moving,sitk.sitkFloat32))\n",
@@ -217,33 +222,22 @@
      "cell_type": "code",
      "collapsed": false,
      "input": [
-      "print(ctx)"
-     ],
-     "language": "python",
-     "metadata": {},
-     "outputs": [],
-     "prompt_number": null
-    },
-    {
-     "cell_type": "code",
-     "collapsed": false,
-     "input": [
       "# Stage 2\n",
       "tx2 = sitk.AffineTransform(fixed.GetDimension())\n",
       "tx2.SetFixedParameters(tx1.GetFixedParameters())\n",
       "R.SetInitialTransform(tx2,inPlace=False)\n",
       "R.SetMovingInitialTransform(ctx)\n",
       "# Set a new optimizer\n",
-      "R.SetOptimizerAsConjugateGradientLineSearch(learningRate=0.2,\n",
+      "R.SetOptimizerAsConjugateGradientLineSearch(learningRate=0.5,\n",
       "                                            numberOfIterations=250,\n",
       "                                            convergenceMinimumValue=1e-6,\n",
       "                                            convergenceWindowSize=10,\n",
       "                                            lineSearchLowerLimit=0,\n",
       "                                            lineSearchUpperLimit=2,\n",
       "                                            lineSearchEpsilon=0.2,\n",
-      "                                            lineSearchMaximumIterations=40,\n",
+      "                                            lineSearchMaximumIterations=20,\n",
       "                                            estimateLearningRate=R.EachIteration,\n",
-      "                                            maximumStepSizeInPhysicalUnits=0.2)\n",
+      "                                            maximumStepSizeInPhysicalUnits=0.5)\n",
       "R.SetOptimizerScalesFromPhysicalShift()\n",
       "affineOut = R.Execute(fixed,moving)\n",
       "print(\"-------\")\n",
@@ -274,28 +268,8 @@
      "cell_type": "code",
      "collapsed": false,
      "input": [
-      "compare_with_baseline(fixed,moving,baseline,transform=ctx,numberOfPixelsTolerance=777,radiusTolerance=0,intensityTolerance=7)"
+      "compare_with_baseline(fixed,moving,outputBFit,transform=ctx,numberOfPixelsTolerance=777,radiusTolerance=0,intensityTolerance=7)"
      ],
-     "language": "python",
-     "metadata": {},
-     "outputs": [],
-     "prompt_number": null
-    },
-    {
-     "cell_type": "code",
-     "collapsed": false,
-     "input": [
-      "print(ctx)"
-     ],
-     "language": "python",
-     "metadata": {},
-     "outputs": [],
-     "prompt_number": null
-    },
-    {
-     "cell_type": "code",
-     "collapsed": false,
-     "input": [],
      "language": "python",
      "metadata": {},
      "outputs": [],
